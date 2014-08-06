@@ -13,3 +13,7 @@ It is a collection of scripts that I have personally used to manage my Wine pref
 How is it written?
 ======
 It is written entirely in BASH, and is supposed to be extendable and modifiable. For this reason I have separated it into several, smaller scripts, which I would call modules, that can be sourced into the main script as needed. I recommended looking over and modifying them to suit your needs, and also reading the descriptions found in each module, as some of them provide important or helpful information.
+
+How do I..?
+======
+Want to know the specifics of how it works? Read through it. It requires both some knowledge of Wine and BASH to fully understand it all, but it's not complete nonsense.
