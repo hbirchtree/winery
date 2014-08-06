@@ -1,0 +1,51 @@
+#!/bin/bash
+
+desktop_announce(){
+if [[ -n "$DISPLAY" ]]; then
+icon="$1"
+header="$2"
+description="$3"
+notify-send -i "$icon" "$2" "$3"
+fi
+}
+desktop_announce_wine(){
+announcer_icon="wine"
+desktop_announce "$announcer_icon" "$2" "$3"
+unset announcer_icon
+}
+desktop_announce_input(){
+announcer_input_type="$1"
+case $announcer_input_type in
+mouse)
+announcer_input_icon=input-mouse
+;;
+keyboard)
+announcer_input_icon=input-keyboard
+;;
+gamepad)
+announcer_input_icon=applications-games
+;;
+*)
+announcer_input_icon=input-keyboard
+;;
+esac
+desktop_announce "$announcer_input_icon" "$2" "$3"
+
+unset announcer_input_icon announcer_input_type
+}
+desktop_exithandler(){
+case $? in
+0)
+desktop_eh_desc=0
+;;
+*)
+desktop_eh_desc="Wine exited abnormally"
+;;
+esac
+desktop_eh_header="Wine exit signal"
+if [[ "$desktop_eh_desc" != "0" ]]; then
+desktop_announce wine "$desktop_eh_header" "$desktop_eh_desc"
+fi
+
+unset desktop_eh_header desktop_eh_desc
+}

@@ -1,0 +1,51 @@
+#!/bin/bash
+#Can be used to change the properties of xinput devices. Mostly useful for the mouse, as there are few options for keyboards.
+#You should modify this.
+
+
+xinput_set_property(){
+xinput set-prop "$SYSTEM_XINPUT_MOUSE_DEVICE" "$1" "$2"
+exithandle "Setting xinput values"
+unset eh_exit #from printing-etiquette.rc
+}
+xinput_apply_mouse_profile(){
+printf "$(tput bold)$(tput setaf 4)Info: Applying mouse profile\n$(tput sgr0)"
+declare -A MOUSE_PROPS
+declare -A MESSAGES
+#MESSAGES='fpsmode: "Acceleration disabled"
+#desktop: "Acceleration enabled"'
+
+MESSAGES[fpsmode]='Acceleration disabled'
+MESSAGES[desktop]='Acceleration enabled'
+MOUSE_PROPS[fpsmode]='"Device Accel Profile" = "-1"
+"Device Accel Constant Deceleration" = "1.5"'
+MOUSE_PROPS[desktop]='"Device Accel Profile" = "0"
+"Device Accel Constant Deceleration" = "1"'
+
+KEY=$1
+IFS_OLD=$IFS
+IFS=$'\n'
+#CHOSEN_PROPS="$(echo "$MOUSE_PROPS"|grep "$KEY")"
+CHOSEN_PROPS="${MOUSE_PROPS[$KEY]}"
+for prop in $CHOSEN_PROPS; do
+unset MOUSE_PROPERTY MOUSE_VALUE
+MOUSE_PROPERTY="$(echo $prop|cut -d'"' -f 2)"
+MOUSE_VALUE="$(echo $prop|cut -d'"' -f 4)"
+if [[ -n $MOUSE_PROPERTY ]] && [[ -n $MOUSE_VALUE ]]; then
+xinput_set_property "$MOUSE_PROPERTY" "$MOUSE_VALUE"
+fi
+done
+#OUT_MESSAGE="$(echo "$MESSAGES"|grep "$KEY"|cut -d'"' -f 2)"
+OUT_MESSAGE="${MESSAGES[$KEY]}"
+if [[ -n "$OUT_MESSAGE" ]]; then
+desktop_announce_input mouse "Mouse input" "$OUT_MESSAGE"
+fi
+IFS=$IFS_OLD
+
+unset MOUSE_VALUE MOUSE_PROPERTY CHOSEN_PROPS OUT_MESSAGE MOUSE_PROPS MESSAGES KEY IFS_OLD
+}
+xinput_reset_mouse_profile(){
+xinput_apply_mouse_profile desktop
+}
+
+

@@ -1,0 +1,9 @@
+#!/bin/bash
+#PulseAudio-related options. You most likely don't need this if you use ALSA or any other audio system.
+
+[[ -z $PA_DISABLE_LATENCY_SETTING ]] && export PULSE_LATENCY_MSEC=60 #Potentially fixes buffer underrun
+if [[ $PA_DSPMODE = 1 ]] && [[ -n $(which padsp) ]];then #For programs that use OSS
+	infoprint "PulseAudio DSP mode enabled\n"
+	WINE_LAUNCH_PREFIX_BASH[padsp]="$(which padsp)"
+#	WINE_LAUNCH_PREFIX_BASH="$WINE_LAUNCH_PREFIX_BASH $(which padsp)" #without associative arrays
+fi

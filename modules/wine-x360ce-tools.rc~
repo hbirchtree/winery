@@ -1,0 +1,9 @@
+#!/bin/bash
+#Simply installs the x360ce files to the current working directory.
+x360ce_install(){
+X360CE_DLLFILE="$WINETOOLS_DIR/x360ce/xinput1_3.dll"
+X360CE_INIFILE="$WINETOOLS_DIR/x360ce/x360ce.ini"
+ln -s "$X360CE_DLLFILE" . && ln -s "$X360CE_INIFILE" .
+exithandle "Symlinking of x360ce files"
+unset X360CE_DLLFILE X360CE_INIFILE
+}

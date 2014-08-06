@@ -1,0 +1,140 @@
+#!/bin/bash
+IFS_OLD=$IFS
+DESKTOP_ICONS_CUSTOM="$HOME/.local/share/icons"
+IFS=$'\n'
+INITIAL_TEXT="[Desktop Entry]
+Version=1.0
+Encoding=UTF-8
+Type=Application"
+for infile in $NAUTILUS_SCRIPT_SELECTED_FILE_PATHS; do
+DESKTOPFILE="$INITIAL_TEXT"
+case "${infile##*.}" in
+sh)
+if [[ -n $(grep "winery.sh" "$infile") ]];then
+file_exception_case=wineshort
+fi
+printf "$infile: Shell script\n"
+DESKTOPFILE="$DESKTOPFILE
+Exec=\"$infile\""
+;;
+*)
+if [[ -x "$infile" ]];then
+printf "$infile: Executable file\n"
+DESKTOPFILE="$DESKTOPFILE
+Exec=\"$infile\""
+else
+printf "$infile: Don't know what to do?\n"
+exit 1
+fi
+;;
+esac
+
+unset NAME
+
+#Name
+while [[ -z $NAME ]]; do
+case $file_exception_case in
+wineshort) NAME="$(grep WINE_DESKTOP_DISPLAYNAME "$infile"|cut -d'"' -f 2)" ;;
+*) NAME="$(zenity --entry --text "Type launcher display-name")" ;;
+esac
+done
+DESKTOPFILE="$DESKTOPFILE
+Name=$NAME"
+
+#Comment
+case $file_exception_case in
+wineshort) COMMENT="$(grep WINE_DESKTOP_DESCRIPTION "$infile"|cut -d'"' -f 2)" ;;
+*) COMMENT="$(zenity --entry --text "Type a comment")";;
+esac
+if [[ -n $COMMENT ]]; then
+DESKTOPFILE="$DESKTOPFILE
+Comment=$COMMENT"
+fi
+
+#Categories
+case $file_exception_case in
+wineshort) CATEGORIES='Game;' ;;
+*) CATEGORIES="$(zenity --list --multiple --separator=';' --text "Select categories" --column=Category AudioVideo Audio Video Development Education Game Graphics Network Office Settings System Utility);" ;;
+esac
+if [[ -n $CATEGORIES ]]; then
+DESKTOPFILE="$DESKTOPFILE
+Categories=$CATEGORIES"
+fi
+
+#StartupWMClass
+case $file_exception_case in
+wineshort)
+WMCLASS="$(grep WINE_DESKTOP_WMCLASS "$infile"|cut -d'"' -f 2|sed -n 1p)"
+if [[ -z $WMCLASS ]]; then
+WMCLASS="$(grep WINE_SCRIPT_EXE "$infile"|cut -d'"' -f 2|sed -n 1p)"
+fi
+;;
+*) WMCLASS="$(zenity --entry --text "Type Startup WM class (java,halo.exe,firefox etc.)")";;
+esac
+DESKTOPFILE="$DESKTOPFILE
+StartupWMClass=$WMCLASS"
+
+#Icon
+case $file_exception_case in
+wineshort) ICONFILE="$(grep WINE_DESKTOP_ICON "$infile"|cut -d'"' -f 2|sed -e "s|\$DESKTOP_ICONS_CUSTOM|$DESKTOP_ICONS_CUSTOM|g")" ;;
+*) ICONFILE="$(zenity --file-selection --file-filter=*.png --title "Select icon file")";;
+esac
+if [[ -n $ICONFILE ]] && [[ -e "$ICONFILE" ]]; then
+DESKTOPFILE="$DESKTOPFILE
+Icon=$ICONFILE"
+fi
+
+#Terminal
+case $file_exception_case in
+wineshort) true;;
+*)
+zenity --question --text "Open in terminal?"
+case $? in
+0)
+DESKTOPFILE="$DESKTOPFILE
+Terminal=true"
+;;
+1)
+DESKTOPFILE="$DESKTOPFILE
+Terminal=false"
+;;
+*)
+exit 1
+;;
+esac
+esac
+
+#Quicklists
+if [[ -n $(grep quicklist_item "$infile") ]]; then
+unset desktop_actions desktop_actions_entries
+declare desktop_actions
+decalre desktop_actions_entries
+IFS_OLD="$IFS"
+IFS=$'\n'
+for item in $(grep quicklist_item "$infile"); do
+item_function="$(echo "$item"|cut -d':' -f 2)"
+desktop_actions="$item_function;$desktop_actions"
+item_title="$(echo "$item"|cut -d':' -f 3)"
+desktop_actions_entries="$desktop_actions_entries
+
+[Desktop Action $item_function]
+Name=$item_title
+Exec=\"$infile\" $item_function"
+done
+IFS="$IFS_OLD"
+DESKTOPFILE="$DESKTOPFILE
+Actions=$desktop_actions
+
+$desktop_actions_entries"
+fi
+
+OUTFILE="$(zenity --file-selection --title="Saving $NAME" --save --file-filter=*.desktop)"
+[[ "${OUTFILE##*.}" != "desktop" ]] && OUTFILE="${OUTFILE}.desktop"
+[[ -e "$OUTFILE" ]] && zenity --info --text "File exists. Will NOT continue." && exit 1
+
+cat > "$OUTFILE" <<EOF
+$DESKTOPFILE
+EOF
+chmod +x "$OUTFILE"
+
+done

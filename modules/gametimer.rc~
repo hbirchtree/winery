@@ -1,0 +1,27 @@
+#!/bin/bash
+#Originally written to keep track of how much time is spent within games that are not tracked by Steam. Relies on the game/program not detaching from the process that is launched, such as with "launchpads" that exit early in the startup process. Is well suited to run independently of Winery
+#Uses the GNU time utility, does not work with shell built-in time utility of Ubuntu.
+
+if [[ -n "$TIME_LOG_NAME" ]] && [[ -z "$LOG_FILE_NAME" ]]; then
+LOG_FILE_NAME="$TIME_LOG_NAME"
+LOG_TIME=1
+fi
+
+if [[ -z $LOG_BASE_DIR ]]; then
+source "$HOME/.local/share/winescripts/modules/constants.rc"
+fi
+
+if [[ "$LOG_TIME" = 1 ]]; then
+if [[ -n "$LOG_FILE_NAME" ]]; then
+	#LOG_BASE_DIR="$HOME/System/Gametimes" #Defined earlier
+	printf "$(tput bold)$(tput setaf 4)Info: Time logging enabled\n$(tput sgr0)"
+	if [[ -n "$IS_WINE_SCRIPT" ]]; then
+	WINE_LAUNCH_PREFIX_BASH[gametimer]="/usr/bin/time --format=%e -a -o "$LOG_BASE_DIR/$LOG_FILE_NAME""
+#	export WINE_LAUNCH_PREFIX_BASH="/usr/bin/time --format=%e -a -o "$LOG_BASE_DIR/$LOG_FILE_NAME" $WINE_LAUNCH_PREFIX_BASH"
+	else
+	export TIMERPREFIX="/usr/bin/time --format=%e -a -o "$LOG_BASE_DIR/$LOG_FILE_NAME""
+	fi
+else
+	printf "$(tput bold)$(tput setaf 3)Warning: No log file for time logging specified. Skipping.\n$(tput sgr0)"
+fi
+fi

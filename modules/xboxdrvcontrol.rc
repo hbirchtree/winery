@@ -1,0 +1,111 @@
+#!/bin/bash
+#Designed for use with Winery as well as independently. Can be deployed system-wide for smooth management of Xbox controller layouts.
+#Note: This script relies on your user being allowed to execute xboxdrv with root permissions without supplying a password. This is indeed a security risk at a high level as it may allow unauthorized use of root by writing a suitable xboxdrv configuration file. Use this script AT YOUR OWN RISK.
+if [[ -z $STATUS_DIR ]]; then
+source "$HOME/.local/share/winescripts/modules/constants.rc"
+fi
+
+xbxctl_reservation_cookie="$STATUS_DIR/xbxdrv-reserved.cookie"
+xbxctl_cookie="$STATUS_DIR/xbxdrv.cookie"
+xbxctl_ltfile="$STATUS_DIR/xbxdrv_layout.txt"
+
+[[ -e "$xbxctl_reservation_cookie" ]] && infoprint "Running program has reserved priority for Xbox 360 controller.\n"
+[[ -e "$xbxctl_reservation_cookie" ]] && xbxctl_reserved=1
+
+xbxdrv_detectrun(){
+xbxdrv_pslist="$(ps ax)"
+xbxdrv_possiblepid="$(echo "$xbxdrv_pslist"|grep 'sudo xboxdrv '|grep -vi 'screen '|awk '{print $1}')"
+if [[ -n "$xbxdrv_possiblepid" ]]; then
+return 0
+else
+return 1
+fi
+# 0=runs 1=not running
+unset xbxdrv_possiblepid xbxdrv_pslist
+}
+xbxdrv_kill(){
+if xbxdrv_detectrun; then
+screen -r xboxdrv -X stuff "^C"
+sleep 2
+fi
+if xbxdrv_detectrun; then
+gksudo --message "Xboxdrv did not quit after sending shutdown signal. Will forcibly kill it with signal 9." -- kill -9 "$xbxdrv_possiblepid"
+fi
+if xbxdrv_detectrun; then
+warnprint "Xboxdrv could not be killed. Please take action.\n"
+return 1
+else
+infoprint "Xboxdrv was successfully killed.\n"
+if [[ -e "$xbxctl_cookie" ]]; then
+rm "$xbxctl_cookie"  && infoprint "Deleted cookie file.\n"
+fi;if [[ -e "$xbxctl_ltfile" ]]; then
+rm "$xbxctl_ltfile"
+fi
+return 0
+fi
+# 0=complete 1=not complete
+}
+
+loadXboxCfg(){
+case $XBOX_CONTROL_LAYOUT in
+none)
+return 0;
+;;
+esac
+if [[ -n "$XBOX_CONTROL_LAYOUT" ]]; then #0
+xbxdrv_confdir="$HOME/.local/share/xboxdrv-configurations"
+if [[ -e "$xbxctl_cookie" ]] && [[ -e "$xbxctl_ltfile" ]]; then #1
+xbxctl_layout="$(cat "$xbxctl_ltfile")"
+if [[ ! "$xbxctl_layout" = "$XBOX_CONTROL_LAYOUT" ]] && [[ ! "$xbxctl_reserved" = 1 ]]; then #2
+xbxdrv_kill
+xbxdrv_status=1
+else #2
+xbxdrv_status=0 #0 = do nothing, 1 = load the new layout
+fi #2
+else #1
+xbxdrv_status=1
+fi #1
+
+if [[ "$xbxdrv_status" = 1 ]]; then #3
+if [[ "$XBOX_CONTROL_LAYOUT" = "xpad" ]]; then #4
+infoprint "Selected xpad.\n"
+if [[ -z "$(lsmod|grep "^xpad")" ]]; then
+ gksudo --message "Inserting xpad kernel module" modprobe xpad
+exithandle "Xpad insertion"
+fi
+elif [[ -e "$xbxdrv_confdir/$XBOX_CONTROL_LAYOUT" ]]; then #4
+infoprint "Selected layout \"$XBOX_CONTROL_LAYOUT\".\n"
+if [[ -n "$(lsmod|grep "^xpad")" ]]; then
+infoprint "Unloading xpad\n"
+gksudo --message "Removing kernel module xpad" rmmod xpad
+exithandle "Xpad removal"
+fi
+if [[ ! -e "$xbxdrv_confdir/$XBOX_CONTROL_LAYOUT" ]]; then errprint "Chosen layout does not exist or is unavailable.\n"; return 1;fi
+screen -d -m -S "xboxdrv" -- sudo xboxdrv -c "$xbxdrv_confdir/$XBOX_CONTROL_LAYOUT"
+>"$xbxctl_cookie"
+echo "$XBOX_CONTROL_LAYOUT" > "$xbxctl_ltfile"
+infoprint "Loaded layout \"$XBOX_CONTROL_LAYOUT\".\n"
+return 0
+fi
+else #3
+infoprint "Layout \"$XBOX_CONTROL_LAYOUT\" is already loaded.\n"
+return 0
+fi #3
+fi #0
+unset xbxdrv_confdir xbxdrv_status
+unset eh_exit #from printing-etiquette.rc
+}
+
+xbxdrv_reserve(){
+touch "$xbxctl_reservation_cookie" && infoprint "Xbox 360 controller has been reserved. No other configuration will be taking ownership of it or changing its layout. Run xbxdrv_rmreserve to undo this operation.\n"
+}
+xbxdrv_rmreserve(){
+rm "$xbxctl_reservation_cookie" && infoprint "Xbox 360 controller has been freed from reservation.\n"
+}
+
+if [[ -z $IS_WINE_SCRIPT ]]; then
+loadXboxCfg
+fi
+
+#unset xbxctl_reservation_cookie xbxctl_cookie xbxctl_ltfile
+unset eh_exit #from printing-etiquette.rc

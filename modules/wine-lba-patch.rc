@@ -1,0 +1,15 @@
+#!/bin/bash
+#File 4gb_patch.exe can be found at http://www.ntcore.com/4gb_patch.php
+#All thanks go to NTCore for making such a wonderful utility. I am not connected to NTCore in any way.
+#Be aware when using this utilty with certain Steam games, as VAC may be strict with modifications done to the game's executable, even though this does not modify a large part of it.
+wine-lba-patch(){
+if [[ -f $1 ]];then
+wine "$WINETOOLS_DIR/4gb_patch.exe" $1
+case $? in
+0) infoprint "File was successfully patched!\n";;
+*) errprint "Failed to patch file \"$1\"\n";;
+esac
+else
+errprint "File \"$1\" not found\n"
+fi
+}

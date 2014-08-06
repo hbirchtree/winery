@@ -1,0 +1,452 @@
+#!/bin/bash
+if [[ -z $IS_WINE_SCRIPT ]]; then
+printf "WARN: IS_WINE_SCRIPT not defined. Not starting.\n"
+return 1
+fi
+
+regset_set_constants(){
+REGEDIT_WINE_PATH="HKEY_CURRENT_USER\Software\Wine"
+}
+regedit_set_key(){
+#Syntax: regedit_set_key PATH\TO\KEY KEYNAME VALUE
+regedit_regfile="$WINEPREFIX/drive_c/tmp.reg"
+echo "REGEDIT4
+
+[$1]
+\"$2\"=\"$3\"
+
+" > "$regedit_regfile"
+wine regedit "$regedit_regfile" #&& rm "$regedit_regfile"
+rm "$regedit_regfile"
+}
+regset_mwo(){
+regset_set_constants
+unset regset_path regset_key regset_value
+regset_path="$REGEDIT_WINE_PATH\DirectInput"
+regset_key="MouseWarpOverride"
+case $1 in
+enabled)
+regset_value="enable"
+;;
+disabled)
+regset_value="disable"
+;;
+force)
+regset_value="force"
+;;
+*)
+errprint "Value for MWO not specified. [enabled|disabled|force] (Default: enabled)\n"
+return 1
+;;
+esac
+regedit_set_key "$regset_path" "$regset_key" "$regset_value"
+unset regset_path regset_key regset_value
+}
+regset_deadzone(){
+regset_set_constants
+unset regset_path regset_key regset_value
+regset_path="$REGEDIT_WINE_PATH\DirectInput"
+regset_key="DefaultDeadZone"
+if [[ "$1" -le 10000 ]] && [[ "$1" -ge 0 ]] && [[ -n "$1" ]]; then
+regset_value=$1
+else
+errprint "Value for deadzone not specified. [0-10000]\n"
+return 1
+fi
+regedit_set_key "$regset_path" "$regset_key" "$regset_value"
+infoprint "Setting joystick deadzone to $regset_value.\n"
+unset regset_path regset_key regset_value
+}
+regset_rtlm(){
+regset_set_constants
+unset regset_path regset_key regset_value
+regset_path="$REGEDIT_WINE_PATH\Direct3D"
+regset_key="RenderTargetLockMode"
+case $1 in
+readdraw)
+regset_value="readdraw"
+;;
+readtex)
+regset_value="readtex"
+;;
+disabled)
+regset_value="disabled"
+;;
+*)
+errprint "Value for RTLM not specified. [readdraw|readtex|disabled] (Default: readtex)\n"
+return 1
+;;
+esac
+regedit_set_key "$regset_path" "$regset_key" "$regset_value"
+unset regset_path regset_key regset_value
+}
+regset_orm(){
+regset_set_constants
+unset regset_path regset_key regset_value
+regset_path="$REGEDIT_WINE_PATH\Direct3D"
+regset_key="OffscreenRenderingMode"
+case $1 in
+backbuffer)
+regset_value="backbuffer"
+;;
+fbo)
+regset_value="fbo"
+;;
+*)
+errprint "Value for ORM not specified. [backbuffer|fbo] (Default: fbo)\n"
+return 1
+;;
+esac
+regedit_set_key "$regset_path" "$regset_key" "$regset_value"
+unset regset_path regset_key regset_value
+}
+regset_sdo(){
+regset_set_constants
+unset regset_path regset_key regset_value
+regset_path="$REGEDIT_WINE_PATH\Direct3D"
+regset_key="StrictDrawOrdering"
+case $1 in
+enabled)
+regset_value="enabled"
+;;
+disabled)
+regset_value="disabled"
+;;
+*)
+errprint "Value for SDO not specified. [enabled|disabled] (Default: disabled)\n"
+return 1
+;;
+esac
+regedit_set_key "$regset_path" "$regset_key" "$regset_value"
+unset regset_path regset_key regset_value
+}
+regset_glsl(){
+regset_set_constants
+unset regset_path regset_key regset_value
+regset_path="$REGEDIT_WINE_PATH\Direct3D"
+regset_key="UseGLSL"
+case $1 in
+enabled)
+regset_value="enabled"
+;;
+disabled)
+regset_value="disabled"
+;;
+*)
+errprint "Value for GLSL not specified. [enabled|disabled] (Default: enabled)\n"
+return 1
+;;
+esac
+regedit_set_key "$regset_path" "$regset_key" "$regset_value"
+unset regset_path regset_key regset_value
+}
+regset_csmt(){
+regset_set_constants
+unset regset_path regset_key regset_value
+regset_path="$REGEDIT_WINE_PATH\Direct3D"
+regset_key="CSMT"
+case $1 in
+enabled)
+regset_value="enabled"
+;;
+disabled)
+regset_value="disabled"
+;;
+*)
+errprint "Value for CSMT not specified. [enabled|disabled] (Default: enabled)\n"
+return 1
+;;
+esac
+regedit_set_key "$regset_path" "$regset_key" "$regset_value"
+unset regset_path regset_key regset_value
+}
+regset_videopcivendor(){
+regset_set_constants
+unset regset_path regset_key regset_value
+regset_path="$REGEDIT_WINE_PATH\Direct3D"
+regset_key="VideoPciVendorID"
+if [[ -z "$1" ]]; then
+errprint "Value for VideoPciVendorID not specified.\n"
+fi
+regset_value="$1"
+regedit_set_key "$regset_path" "$regset_key" "$regset_value"
+unset regset_path regset_key regset_value
+}
+regset_videopcidevice(){
+regset_set_constants
+unset regset_path regset_key regset_value
+regset_path="$REGEDIT_WINE_PATH\Direct3D"
+regset_key="VideoPciDeviceID"
+if [[ -z "$1" ]]; then
+errprint "Value for VideoPciDeviceID not specified.\n"
+fi
+regset_value="$1"
+regedit_set_key "$regset_path" "$regset_key" "$regset_value"
+unset regset_path regset_key regset_value
+}
+regset_ao(){
+regset_set_constants
+unset regset_path regset_key regset_value
+regset_path="$REGEDIT_WINE_PATH\Direct3D"
+regset_key="AlwaysOffscreen"
+case $1 in
+enabled)
+regset_value="enabled"
+;;
+disabled)
+regset_value="disabled"
+;;
+*)
+errprint "Value for AO not specified. [enabled|disabled] (Default: enabled)\n"
+return 1
+;;
+esac
+regedit_set_key "$regset_path" "$regset_key" "$regset_value"
+unset regset_path regset_key regset_value
+}
+regset_grabfullscreen(){
+regset_set_constants
+unset regset_path regset_key regset_value
+regset_path="$REGEDIT_WINE_PATH\X11 Driver"
+regset_key="GrabFullscreen"
+case $1 in
+enabled)
+regset_value="Y"
+;;
+disabled)
+regset_value="N"
+;;
+*)
+errprint "Value for grabbing fullscreen not specified. [enabled|disabled] (Default: disabled)\n"
+return 1
+;;
+esac
+regedit_set_key "$regset_path" "$regset_key" "$regset_value"
+unset regset_path regset_key regset_value
+}
+regset_grabpointer(){
+regset_set_constants
+unset regset_path regset_key regset_value
+regset_path="$REGEDIT_WINE_PATH\X11 Driver"
+regset_key="GrabPointer"
+case $1 in
+enabled)
+regset_value="Y"
+;;
+disabled)
+regset_value="N"
+;;
+*)
+errprint "Value for grabbing pointer not specified. [enabled|disabled] (Default: enabled)\n"
+return 1
+;;
+esac
+regedit_set_key "$regset_path" "$regset_key" "$regset_value"
+unset regset_path regset_key regset_value
+}
+regset_windowdecoration(){
+regset_set_constants
+unset regset_path regset_key regset_value
+regset_path="$REGEDIT_WINE_PATH\X11 Driver"
+regset_key="Decorated"
+case $1 in
+enabled)
+regset_value="Y"
+;;
+disabled)
+regset_value="N"
+;;
+*)
+errprint "Value for window decoration not specified. [enabled|disabled] (Default: enabled)\n"
+return 1
+;;
+esac
+regedit_set_key "$regset_path" "$regset_key" "$regset_value"
+unset regset_path regset_key regset_value
+}
+regset_windowmanagement(){
+regset_set_constants
+unset regset_path regset_key regset_value
+regset_path="$REGEDIT_WINE_PATH\X11 Driver"
+regset_key="Managed"
+case $1 in
+enabled)
+regset_value="Y"
+;;
+disabled)
+regset_value="N"
+;;
+*)
+errprint "Value for window management not specified. [enabled|disabled] (Default: enabled)\n"
+return 1
+;;
+esac
+regedit_set_key "$regset_path" "$regset_key" "$regset_value"
+unset regset_path regset_key regset_value
+}
+regset_allowxrandr(){
+regset_set_constants
+unset regset_path regset_key regset_value
+regset_path="$REGEDIT_WINE_PATH\X11 Driver"
+regset_key="UseXRandR"
+case $1 in
+enabled)
+regset_value="Y"
+;;
+disabled)
+regset_value="N"
+;;
+*)
+errprint "Value for allowing XRandR not specified. [enabled|disabled] (Default: enabled)\n"
+return 1
+;;
+esac
+regedit_set_key "$regset_path" "$regset_key" "$regset_value"
+unset regset_path regset_key regset_value
+}
+regset_allowxvidmode(){
+regset_set_constants
+unset regset_path regset_key regset_value
+regset_path="$REGEDIT_WINE_PATH\X11 Driver"
+regset_key="UseXVidMode"
+case $1 in
+enabled)
+regset_value="Y"
+;;
+disabled)
+regset_value="N"
+;;
+*)
+errprint "Value for allowing xvidmodesetting not specified. [enabled|disabled] (Default: disabled)\n"
+return 1
+;;
+esac
+regedit_set_key "$regset_path" "$regset_key" "$regset_value"
+unset regset_path regset_key regset_value
+}
+regset_exclusive_deadzone(){
+regset_set_constants
+if [[ -z $1 ]] || [[ -z $2 ]]; then errprint "Syntax: APPDEFAULTS VALUE\n"; return 1; fi
+REGEDIT_WINE_PATH_DEFAULT="$REGEDIT_WINE_PATH"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT\AppDefaults\\$1"
+regset_deadzone "$2"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT"
+unset REGEDIT_WINE_PATH_DEFAULT
+}
+regset_exclusive_csmt(){
+regset_set_constants
+if [[ -z $1 ]] || [[ -z $2 ]]; then errprint "Syntax: APPDEFAULTS VALUE\n"; return 1; fi
+REGEDIT_WINE_PATH_DEFAULT="$REGEDIT_WINE_PATH"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT\AppDefaults\\$1"
+regset_csmt "$2"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT"
+unset REGEDIT_WINE_PATH_DEFAULT
+}
+regset_exclusive_allowxrandr(){
+regset_set_constants
+if [[ -z $1 ]] || [[ -z $2 ]]; then errprint "Syntax: APPDEFAULTS VALUE\n"; return 1; fi
+REGEDIT_WINE_PATH_DEFAULT="$REGEDIT_WINE_PATH"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT\AppDefaults\\$1"
+regset_allowxrandr "$2"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT"
+unset REGEDIT_WINE_PATH_DEFAULT
+}
+regset_exclusive_allowxvidmode(){
+regset_set_constants
+if [[ -z $1 ]] || [[ -z $2 ]]; then errprint "Syntax: APPDEFAULTS VALUE\n"; return 1; fi
+REGEDIT_WINE_PATH_DEFAULT="$REGEDIT_WINE_PATH"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT\AppDefaults\\$1"
+regset_allowxvidmode "$2"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT"
+unset REGEDIT_WINE_PATH_DEFAULT
+}
+regset_exclusive_ao(){
+regset_set_constants
+if [[ -z $1 ]] || [[ -z $2 ]]; then errprint "Syntax: APPDEFAULTS VALUE\n"; return 1; fi
+REGEDIT_WINE_PATH_DEFAULT="$REGEDIT_WINE_PATH"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT\AppDefaults\\$1"
+regset_ao "$2"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT"
+unset REGEDIT_WINE_PATH_DEFAULT
+}
+regset_exclusive_glsl(){
+regset_set_constants
+if [[ -z $1 ]] || [[ -z $2 ]]; then errprint "Syntax: APPDEFAULTS VALUE\n"; return 1; fi
+REGEDIT_WINE_PATH_DEFAULT="$REGEDIT_WINE_PATH"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT\AppDefaults\\$1"
+regset_glsl "$2"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT"
+unset REGEDIT_WINE_PATH_DEFAULT
+}
+regset_exclusive_grabfullscreen(){
+regset_set_constants
+if [[ -z $1 ]] || [[ -z $2 ]]; then errprint "Syntax: APPDEFAULTS VALUE\n"; return 1; fi
+REGEDIT_WINE_PATH_DEFAULT="$REGEDIT_WINE_PATH"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT\AppDefaults\\$1"
+regset_grabfullscreen "$2"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT"
+unset REGEDIT_WINE_PATH_DEFAULT
+}
+regset_exclusive_grabpointer(){
+regset_set_constants
+if [[ -z $1 ]] || [[ -z $2 ]]; then errprint "Syntax: APPDEFAULTS VALUE\n"; return 1; fi
+REGEDIT_WINE_PATH_DEFAULT="$REGEDIT_WINE_PATH"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT\AppDefaults\\$1"
+regset_grabpointer "$2"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT"
+unset REGEDIT_WINE_PATH_DEFAULT
+}
+regset_exclusive_mwo(){
+regset_set_constants
+if [[ -z $1 ]] || [[ -z $2 ]]; then errprint "Syntax: APPDEFAULTS VALUE\n"; return 1; fi
+REGEDIT_WINE_PATH_DEFAULT="$REGEDIT_WINE_PATH"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT\AppDefaults\\$1"
+regset_mwo "$2"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT"
+unset REGEDIT_WINE_PATH_DEFAULT
+}
+regset_exclusive_orm(){
+regset_set_constants
+if [[ -z $1 ]] || [[ -z $2 ]]; then errprint "Syntax: APPDEFAULTS VALUE\n"; return 1; fi
+REGEDIT_WINE_PATH_DEFAULT="$REGEDIT_WINE_PATH"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT\AppDefaults\\$1"
+regset_orm "$2"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT"
+unset REGEDIT_WINE_PATH_DEFAULT
+}
+regset_exclusive_rtlm(){
+regset_set_constants
+if [[ -z $1 ]] || [[ -z $2 ]]; then errprint "Syntax: APPDEFAULTS VALUE\n"; return 1; fi
+REGEDIT_WINE_PATH_DEFAULT="$REGEDIT_WINE_PATH"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT\AppDefaults\\$1"
+regset_rtlm "$2"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT"
+unset REGEDIT_WINE_PATH_DEFAULT
+}
+regset_exclusive_sdo(){
+regset_set_constants
+if [[ -z $1 ]] || [[ -z $2 ]]; then errprint "Syntax: APPDEFAULTS VALUE\n"; return 1; fi
+REGEDIT_WINE_PATH_DEFAULT="$REGEDIT_WINE_PATH"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT\AppDefaults\\$1"
+regset_sdo "$2"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT"
+unset REGEDIT_WINE_PATH_DEFAULT
+}
+regset_exclusive_videopcivendor(){
+regset_set_constants
+if [[ -z $1 ]] || [[ -z $2 ]]; then errprint "Syntax: APPDEFAULTS VALUE\n"; return 1; fi
+REGEDIT_WINE_PATH_DEFAULT="$REGEDIT_WINE_PATH"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT\AppDefaults\\$1"
+regset_videopcivendor "$2"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT"
+unset REGEDIT_WINE_PATH_DEFAULT
+}
+regset_exclusive_videopcidevice(){
+regset_set_constants
+if [[ -z $1 ]] || [[ -z $2 ]]; then errprint "Syntax: APPDEFAULTS VALUE\n"; return 1; fi
+REGEDIT_WINE_PATH_DEFAULT="$REGEDIT_WINE_PATH"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT\AppDefaults\\$1"
+regset_videopcivendor "$2"
+REGEDIT_WINE_PATH="$REGEDIT_WINE_PATH_DEFAULT"
+unset REGEDIT_WINE_PATH_DEFAULT
+}
